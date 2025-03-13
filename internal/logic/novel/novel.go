@@ -2,10 +2,11 @@ package novel
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/yxSakana/gdev_demo/internal/consts"
 	"github.com/yxSakana/gdev_demo/utility"
 	"gorm.io/gorm"
-
-	"github.com/gin-gonic/gin"
+	"log"
 
 	v1 "github.com/yxSakana/gdev_demo/api/novel/v1"
 	"github.com/yxSakana/gdev_demo/internal/dao"
@@ -127,6 +128,12 @@ func QueryNovel(c *gin.Context, query model.NovelQueryInput) ([]model.NovelOutpu
 }
 
 func DetailNovelByID(c *gin.Context, nid uint64) (*model.NovelOutput, error) {
+	cacheKey := fmt.Sprintf("%s:%d", consts.CacheNovel, nid)
+	d := novelService.GetFromCache(cacheKey)
+	if d != nil {
+		log.Printf("get from cache: %#v", *d.Novel)
+	}
+
 	nEntity, err := novelDao.GetNovelByID(dao.Ctx(c), nid)
 	if err != nil {
 		return nil, err
@@ -137,26 +144,26 @@ func DetailNovelByID(c *gin.Context, nid uint64) (*model.NovelOutput, error) {
 		return nil, err
 	}
 
-	chapterIds, err := GetNovelChapterIds(c, nEntity.ID)
-	if err != nil {
-		return nil, err
+	if err := novelService.SetCache(cacheKey, &do.Novel{Novel: nEntity}); err != nil {
+		log.Printf("set cache err:%v", err)
 	}
 
-	return &model.NovelOutput{
-		NovelID:      nid,
-		UserID:       nEntity.UserID,
-		Author:       nEntity.Uploader,
-		Title:        nEntity.Title,
-		Tags:         tags,
-		Description:  nEntity.Description,
-		CoverUrl:     nEntity.CoverUrl,
-		Status:       nEntity.Status,
-		WordCount:    nEntity.WordCount,
-		View:         nEntity.View,
-		Like:         nEntity.Like,
-		ChapterCount: uint(len(chapterIds)),
-		ChapterIds:   chapterIds,
-	}, nil
+	ret := &model.NovelOutput{
+		NovelID:     nid,
+		UserID:      nEntity.UserID,
+		Author:      nEntity.Uploader,
+		Title:       nEntity.Title,
+		Tags:        tags,
+		Description: nEntity.Description,
+		CoverUrl:    nEntity.CoverUrl,
+		Status:      nEntity.Status,
+		WordCount:   nEntity.WordCount,
+		View:        nEntity.View,
+		Like:        nEntity.Like,
+		//ChapterCount: uint(len(chapterIds)), TODO: novel chapter count
+	}
+
+	return ret, nil
 }
 
 func GetNovelTags(c *gin.Context, nid uint64) ([]string, error) {

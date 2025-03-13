@@ -22,8 +22,15 @@ type mysql struct {
 	Dbname   string `yaml:"dbname"`
 }
 
+type redis struct {
+	Addr     string `yaml:"addr"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
+}
+
 type database struct {
 	Mysql mysql `yaml:"mysql"`
+	Redis redis `yaml:"redis"`
 }
 
 type setting struct {
