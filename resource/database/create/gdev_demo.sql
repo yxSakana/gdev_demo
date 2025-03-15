@@ -30,6 +30,7 @@ CREATE TABLE `novels` (
   `description` TEXT,
   `cover_url` VARCHAR(500),
   `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0-连载中, 1-完结',
+  `chapter_number` INT DEFAULT 0 NOT NULL,
   `word_count` INT DEFAULT 0 COMMENT '总字数',
   `view` INT DEFAULT 0 COMMENT '阅读量',
   `like` INT DEFAULT 0,
@@ -43,7 +44,7 @@ CREATE TABLE `novel_chapters` (
   `novel_id` BIGINT NOT NULL COMMENT '',
   `title` VARCHAR(255) NOT NULL COMMENT '',
   `content` TEXT NOT NULL COMMENT '',
-  `number` INT NOT NULL COMMENT '章节序号',
+  `number` INT UNIQUE NOT NULL COMMENT '章节序号',
   `word_count` INT NOT NULL DEFAULT 0 COMMENT '总字数',
   `view` INT NOT NULL DEFAULT 0 COMMENT '阅读量',
   `like` INT NOT NULL DEFAULT 0,
@@ -76,20 +77,22 @@ CREATE TABLE `novel_tag_rel` (
 # LEFT JOIN novel_tags ON novel_tag_rel.novel_tag_id = novel_tags.id
 # WHERE novel_tags.name = 'tag_name';
 
-DROP PROCEDURE IF EXISTS update_total_word_count;
+DROP PROCEDURE IF EXISTS update_novel_by_chapter;
 
 DELIMITER $$
 -- 触发器更新小说字数
-CREATE PROCEDURE update_total_word_count(IN in_novel_id BIGINT)
+CREATE PROCEDURE update_novel_by_chapter(IN in_novel_id BIGINT)
 BEGIN
     declare total_word_count INT;
+    declare total_chapter_count INT;
 
-    SELECT SUM(word_count) INTO total_word_count
+    SELECT IFNULL(SUM(word_count), 0), COUNT(*)
+    INTO total_word_count, total_chapter_count
     FROM novel_chapters
     WHERE novel_chapters.novel_id = in_novel_id;
 
     UPDATE novels
-    SET word_count = total_word_count
+    SET word_count = total_word_count, chapter_number = total_chapter_count
     WHERE id = in_novel_id;
 END $$
 -- insert
@@ -97,21 +100,21 @@ CREATE TRIGGER update_novel_word_count_after_insert
 AFTER INSERT ON novel_chapters
 FOR EACH ROW
 BEGIN
-    call update_total_word_count(NEW.novel_id);
+    call update_novel_by_chapter(NEW.novel_id);
 END $$
 -- update
 CREATE TRIGGER update_novel_word_count_after_update
 AFTER UPDATE ON novel_chapters
 FOR EACH ROW
 BEGIN
-    call update_total_word_count(NEW.novel_id);
+    call update_novel_by_chapter(NEW.novel_id);
 END $$
 -- delete
 CREATE TRIGGER update_novel_word_count_after_delete
 AFTER DELETE ON novel_chapters
 FOR EACH ROW
 BEGIN
-    call update_total_word_count(OLD.novel_id);
+    call update_novel_by_chapter(OLD.novel_id);
 END $$
 DELIMITER ;
 -- --------
@@ -125,6 +128,8 @@ CREATE TABLE `image_collections` (
   `description` TEXT,
   `cover_url` VARCHAR(255),
   `number` INT DEFAULT 0 NOT NULL COMMENT '该图包有x张',
+  `view` INT NOT NULL DEFAULT 0 COMMENT '阅读量',
+  `like` INT NOT NULL DEFAULT 0,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB CHARACTER SET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT '';

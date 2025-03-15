@@ -8,15 +8,23 @@ import (
 )
 
 func Auth(c *gin.Context) {
-	tokenStr := c.GetHeader("Authorization")
-	_, err := user.ParseToken(tokenStr)
-	if err != nil {
+	abort := func() {
 		c.JSON(http.StatusUnauthorized, consts.ApiResponse{
 			Code: -1,
 			Msg:  "Unauthorized",
 			Data: nil,
 		})
 		c.Abort()
+	}
+
+	uid, err := user.GetUserID(c)
+	if err != nil {
+		abort()
+		return
+	}
+	exist, err := user.IsExist(c, uid)
+	if err != nil || !exist {
+		abort()
 		return
 	}
 

@@ -17,7 +17,7 @@ type CreateNovelRes struct {
 }
 
 type UploadChapterReq struct {
-	NovelId string `form:"novel_id" binding:"required" json:"novel_id"`
+	NovelId uint64 `form:"novel_id" binding:"required" json:"novel_id"`
 	Title   string `form:"title" binding:"required" json:"title"`
 	Number  int    `form:"number" binding:"required" json:"number"`
 	Content string `form:"content" binding:"required" json:"content"`
@@ -45,3 +45,12 @@ type QueryRes struct {
 	Total uint          `json:"total"`
 	List  []NovelDetail `json:"list"`
 }
+
+type UpdateNovelReq struct {
+	Title       *string       `form:"title" gorm:"title"`
+	Description *string       `form:"description" gorm:"description"`
+	Cover       FileHeaderPtr `form:"cover" gorm:"-"`
+	Status      *int          `form:"status" gorm:"status"`
+	Tags        *[]string     `form:"tags" gorm:"-"`
+}
+type UpdateNovelRes struct{}

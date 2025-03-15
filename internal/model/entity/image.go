@@ -10,6 +10,8 @@ type ImageCollection struct {
 	Description string    `json:"description"`
 	CoverUrl    string    `gorm:"size:255" json:"cover_url"`
 	Number      int       `gorm:"not null" json:"number"`
+	View        int       `gorm:"not null" json:"view"`
+	Like        int       `gorm:"not null" json:"like"`
 	CreatedAt   time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }

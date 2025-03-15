@@ -1,6 +1,8 @@
 package novel
 
 import (
+	"errors"
+	"gorm.io/gorm"
 	"log"
 	"strconv"
 
@@ -23,6 +25,9 @@ func DetailNovel(c *gin.Context) {
 	req.NovelID = uint64(nid)
 
 	novelOutput, err := novel.DetailNovelByID(c, req.NovelID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		consts.ComError(c, "不存在")
+	}
 	if err != nil {
 		log.Printf("detail novel err: %v", err)
 		consts.ServerError(c)
@@ -31,19 +36,18 @@ func DetailNovel(c *gin.Context) {
 
 	res = v1.DetailNovelRes{
 		NovelDetail: v1.NovelDetail{
-			NovelID:      novelOutput.NovelID,
-			UploaderID:   novelOutput.UserID,
-			Author:       novelOutput.Author,
-			Title:        novelOutput.Title,
-			Tags:         novelOutput.Tags,
-			Description:  novelOutput.Description,
-			CoverUrl:     novelOutput.CoverUrl,
-			Status:       novelOutput.Status,
-			WordCount:    novelOutput.WordCount,
-			View:         novelOutput.View,
-			Like:         novelOutput.Like,
-			ChapterCount: novelOutput.ChapterCount,
-			ChapterIds:   novelOutput.ChapterIds,
+			NovelID:       novelOutput.ID,
+			UploaderID:    novelOutput.UserID,
+			Author:        novelOutput.Uploader,
+			Title:         novelOutput.Title,
+			Tags:          novelOutput.Tags,
+			Description:   novelOutput.Description,
+			CoverUrl:      novelOutput.CoverUrl,
+			Status:        novelOutput.Status,
+			WordCount:     novelOutput.WordCount,
+			View:          novelOutput.View,
+			Like:          novelOutput.Like,
+			ChapterNumber: novelOutput.ChapterNumber,
 		},
 	}
 	consts.Success(c, res)

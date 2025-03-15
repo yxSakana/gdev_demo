@@ -2,7 +2,6 @@ package novel
 
 import (
 	novelDao "github.com/yxSakana/gdev_demo/internal/dao/novel"
-	"github.com/yxSakana/gdev_demo/internal/model/do"
 	"github.com/yxSakana/gdev_demo/internal/model/entity"
 	"gorm.io/gorm"
 )
@@ -21,7 +20,7 @@ func LinkNovelAndTags(db *gorm.DB, id uint64, tags []string) error {
 			NovelId:    id,
 			NovelTagId: tagEntity.ID,
 		}
-		if err := novelDao.CreateNovelTagRel(db, &do.NovelTagRel{NovelTagRel: &ntrEntity}); err != nil {
+		if err := novelDao.CreateNovelTagRel(db, &ntrEntity); err != nil {
 			return err
 		}
 	}

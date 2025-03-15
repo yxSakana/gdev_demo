@@ -4,7 +4,6 @@ import (
 	"gorm.io/gorm"
 
 	imageDao "github.com/yxSakana/gdev_demo/internal/dao/image"
-	"github.com/yxSakana/gdev_demo/internal/model/do"
 	"github.com/yxSakana/gdev_demo/internal/model/entity"
 )
 
@@ -22,7 +21,7 @@ func LinkCollectionAndTags(db *gorm.DB, id uint64, tags []string) error {
 			CollectionID: id,
 			ImageTagID:   tagEntity.ID,
 		}
-		if err := imageDao.CreateItr(db, &do.ImageTagRel{ImageTagRel: &itrEntity}); err != nil {
+		if err := imageDao.CreateItr(db, &itrEntity); err != nil {
 			return err
 		}
 	}

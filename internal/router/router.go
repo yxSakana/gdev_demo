@@ -23,13 +23,14 @@ func InitRouter() *gin.Engine {
 		userG.POST("/register", user.Register)
 	}
 
-	r.Use(middleware.Auth)
+	v1.Use(middleware.Auth)
 	novelG := v1.Group("/novel")
 	{
-		novelG.GET("/:novel_id", novel.DetailNovel)
-		novelG.GET("/query", novel.Query)
 		novelG.POST("/create", novel.CreateNovel)
 		novelG.POST("/upload_chapter", novel.UploadChapter)
+		novelG.GET("/:novel_id", novel.DetailNovel)
+		novelG.GET("/query", novel.Query)
+		novelG.POST("/update/:novel_id", novel.UpdateNovel)
 	}
 	imageG := v1.Group("/image")
 	{

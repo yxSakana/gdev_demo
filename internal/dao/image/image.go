@@ -1,13 +1,19 @@
 package image
 
 import (
+	"github.com/yxSakana/gdev_demo/internal/model/conv"
 	"github.com/yxSakana/gdev_demo/internal/model/do"
 	"github.com/yxSakana/gdev_demo/internal/model/entity"
 	"gorm.io/gorm"
 )
 
 func CreateImage(db *gorm.DB, img *do.Image) error {
-	return db.Create(&img.Image).Error
+	e := conv.ImageToEntity(img)
+	err := db.Create(&e).Error
+	if err == nil {
+		img.ID = e.ID
+	}
+	return err
 }
 
 func GetCollectionImageCount(db *gorm.DB, id uint64) (count int64, err error) {

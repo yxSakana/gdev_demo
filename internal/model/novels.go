@@ -1,5 +1,11 @@
 package model
 
+import (
+	"mime/multipart"
+)
+
+type FileHeaderPtr = *multipart.FileHeader
+
 type NovelQueryInput struct {
 	Id        *uint64 `json:"id" form:"id"`
 	Tag       *string `json:"tag" form:"tag"`
@@ -10,18 +16,14 @@ type NovelQueryInput struct {
 	Like      *uint   `json:"like" form:"like"`
 }
 
-type NovelOutput struct {
-	NovelID      uint64   `json:"novel_id"`
-	UserID       uint64   `json:"user_id"`
-	Author       string   `json:"author"`
-	Title        string   `json:"title"`
-	Tags         []string `json:"tags"`
-	Description  string   `json:"description"`
-	CoverUrl     string   `json:"cover_url"`
-	Status       uint8    `json:"status"`
-	WordCount    uint     `json:"word_count"`
-	View         uint     `json:"view"`
-	Like         uint     `json:"like"`
-	ChapterCount uint     `json:"chapter_count"`
-	ChapterIds   []uint64 `json:"chapter_ids"`
+type UpdateNovelInput struct {
+	Title         *string       `gorm:"title"`
+	Description   *string       `gorm:"description"`
+	Cover         FileHeaderPtr `gorm:"-"`
+	Status        *int          `gorm:"status"`
+	Tags          *[]string     `gorm:"-"`
+	ChapterNumber *uint         `gorm:"chapter_number"`
+	WordCount     *uint         `gorm:"word_count"`
+	View          *uint         `gorm:"view"`
+	Like          *uint         `gorm:"like"`
 }

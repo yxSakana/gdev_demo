@@ -1,17 +1,22 @@
 package image
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/yxSakana/gdev_demo/internal/dao"
-	"gorm.io/gorm"
+	"errors"
+	"github.com/yxSakana/gdev_demo/internal/consts"
+	"github.com/yxSakana/gdev_demo/internal/rediscon"
+	"log"
 	"mime/multipart"
 
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+
+	"github.com/yxSakana/gdev_demo/internal/dao"
 	imageDao "github.com/yxSakana/gdev_demo/internal/dao/image"
 	"github.com/yxSakana/gdev_demo/internal/logic/user"
 	"github.com/yxSakana/gdev_demo/internal/model"
+	"github.com/yxSakana/gdev_demo/internal/model/conv"
 	"github.com/yxSakana/gdev_demo/internal/model/do"
-	"github.com/yxSakana/gdev_demo/internal/model/entity"
-	service "github.com/yxSakana/gdev_demo/internal/service/image"
+	imgService "github.com/yxSakana/gdev_demo/internal/service/image"
 	"github.com/yxSakana/gdev_demo/utility"
 )
 
@@ -21,21 +26,9 @@ func Create(c *gin.Context, in model.CreateImageCollectionInput) error {
 		return err
 	}
 
-	filePath, err := utility.GenerateFilePath(in.Cover)
-	if err != nil {
-		return err
-	}
+	filePath, err := utility.SaveFile(c, in.Cover, utility.CoverFt)
 
-	if err := utility.CheckCoverFile(in.Cover, filePath); err != nil {
-		return err
-	}
-
-	err = c.SaveUploadedFile(in.Cover, filePath)
-	if err != nil {
-		return err
-	}
-
-	collectionEntity := entity.ImageCollection{
+	collectionDo := do.ImageCollection{
 		UserID:      userEntity.ID,
 		Uploader:    userEntity.Username,
 		Title:       in.Title,
@@ -44,13 +37,12 @@ func Create(c *gin.Context, in model.CreateImageCollectionInput) error {
 	}
 
 	db := dao.Ctx(c)
-	d := &do.ImageCollection{ImageCollection: &collectionEntity}
 	return db.Transaction(func(tx *gorm.DB) error {
-		if err := imageDao.Create(tx, d); err != nil {
+		if err := imageDao.Create(tx, &collectionDo); err != nil {
 			return err
 		}
 
-		if err := service.LinkCollectionAndTags(tx, d.ID, in.Tags); err != nil {
+		if err := imgService.LinkCollectionAndTags(tx, collectionDo.ID, in.Tags); err != nil {
 			return err
 		}
 		return nil
@@ -64,26 +56,15 @@ func UploadImage(c *gin.Context, collectionID uint64, image *multipart.FileHeade
 		return err
 	}
 
-	filePath, err := utility.GenerateFilePath(image)
-	if err != nil {
-		return err
-	}
+	filePath, err := utility.SaveFile(c, image, utility.ImageFt)
 
-	if err := utility.CheckImageFile(image, filePath); err != nil {
-		return err
-	}
-
-	if err := c.SaveUploadedFile(image, filePath); err != nil {
-		return err
-	}
-
-	imgEntity := entity.Image{
+	imgDo := do.Image{
 		CollectionID: collectionID,
 		ImageUrl:     filePath,
 	}
 
-	return db.Transaction(func(tx *gorm.DB) error {
-		if err := imageDao.CreateImage(tx, &do.Image{Image: &imgEntity}); err != nil {
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := imageDao.CreateImage(tx, &imgDo); err != nil {
 			return err
 		}
 
@@ -92,31 +73,50 @@ func UploadImage(c *gin.Context, collectionID uint64, image *multipart.FileHeade
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if err := imgService.DelCache(collectionID); err != nil {
+		log.Printf("delete image failed, collectionID: %d, err: %v", collectionID, err)
+	}
+
+	return nil
 }
 
-func DetailImgCollectionByID(c *gin.Context, collectionID uint64) (*model.DetailImgCollectionOutput, error) {
+func DetailImgCollectionByID(c *gin.Context, collectionID uint64) (*do.ImageCollection, error) {
 	db := dao.Ctx(c)
+	uid, err := user.GetUserID(c)
+	if err != nil {
+		return nil, err
+	}
+
+	cacheRet, err := imgService.GetFromCache(collectionID)
+	if err == nil {
+		log.Printf("cache ret is: %v", cacheRet)
+		_ = rediscon.AddUvAndPv(uid, collectionID, consts.ImageCt)
+		return cacheRet, nil
+	}
 
 	imgCollectionEntity, err := imageDao.GetCollectionByID(db, collectionID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			_ = imgService.SetCache(collectionID, nil)
+		}
 		return nil, err
 	}
 
-	tags, err := service.GetImgCollectionTags(db, collectionID)
+	tags, err := imgService.GetImgCollectionTags(db, collectionID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.DetailImgCollectionOutput{
-		ID:           collectionID,
-		UploaderID:   imgCollectionEntity.UserID,
-		UploaderName: imgCollectionEntity.Uploader,
-		Title:        imgCollectionEntity.Title,
-		Description:  imgCollectionEntity.Description,
-		CoverUrl:     imgCollectionEntity.CoverUrl,
-		Number:       imgCollectionEntity.Number,
-		Tags:         tags,
-		CreatedAt:    imgCollectionEntity.CreatedAt,
-		UpdatedAt:    imgCollectionEntity.UpdatedAt,
-	}, nil
+	imgCollDo := conv.ImageCollToDo(imgCollectionEntity, tags)
+
+	if err := imgService.SetCache(collectionID, imgCollDo); err != nil {
+		log.Printf("ImageFt seriver SetCache err: %v", err)
+	}
+
+	_ = rediscon.AddUvAndPv(uid, collectionID, consts.ImageCt)
+	return imgCollDo, nil
 }

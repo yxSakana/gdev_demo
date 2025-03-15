@@ -36,19 +36,18 @@ func Query(c *gin.Context) {
 
 	for _, n := range novelItems {
 		res.List = append(res.List, v1.NovelDetail{
-			NovelID:      n.NovelID,
-			UploaderID:   n.UserID,
-			Author:       n.Author,
-			Title:        n.Title,
-			Tags:         n.Tags,
-			Description:  n.Description,
-			CoverUrl:     n.CoverUrl,
-			Status:       n.Status,
-			WordCount:    n.WordCount,
-			View:         n.View,
-			Like:         n.Like,
-			ChapterCount: n.ChapterCount,
-			ChapterIds:   n.ChapterIds,
+			NovelID:       n.ID,
+			UploaderID:    n.UserID,
+			Author:        n.Uploader,
+			Title:         n.Title,
+			Tags:          n.Tags,
+			Description:   n.Description,
+			CoverUrl:      n.CoverUrl,
+			Status:        n.Status,
+			WordCount:     n.WordCount,
+			View:          n.View,
+			Like:          n.Like,
+			ChapterNumber: n.ChapterNumber,
 		})
 	}
 	res.Total = uint(len(res.List))

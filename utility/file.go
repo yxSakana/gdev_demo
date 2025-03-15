@@ -5,12 +5,48 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/yxSakana/gdev_demo/settings"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 )
+
+type FileType int
+
+const (
+	CoverFt FileType = iota
+	ImageFt
+)
+
+var ErrFileHeaderIsNil = errors.New("file is nil")
+
+func SaveFile(c *gin.Context, file *multipart.FileHeader, ft FileType) (filePath string, err error) {
+	if file == nil {
+		return "", ErrFileHeaderIsNil
+	}
+	filePath, err = GenerateFilePath(file)
+	if err != nil {
+		return "", err
+	}
+
+	switch ft {
+	case CoverFt:
+		if err := CheckCoverFile(file, filePath); err != nil {
+			return "", err
+		}
+	case ImageFt:
+		if err := CheckImageFile(file, filePath); err != nil {
+			return "", err
+		}
+	}
+
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		return "", err
+	}
+	return filePath, nil
+}
 
 func GenerateFilePath(file *multipart.FileHeader) (string, error) {
 	hashName, err := hashFileHeader(file)

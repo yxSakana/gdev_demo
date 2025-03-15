@@ -3,23 +3,24 @@ package entity
 import "time"
 
 type Novel struct {
-	ID          uint64    `json:"id"`
-	UserID      uint64    `json:"user_id"`
-	Uploader    string    `json:"Uploader"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	CoverUrl    string    `json:"cover_url"`
-	Status      uint8     `json:"status"`
-	WordCount   uint      `json:"word_count"`
-	View        uint      `json:"view"`
-	Like        uint      `json:"like"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID            uint64    `json:"id"`
+	UserID        uint64    `json:"user_id"`
+	Uploader      string    `json:"Uploader"`
+	Title         string    `json:"title"`
+	Description   string    `json:"description"`
+	CoverUrl      string    `json:"cover_url"`
+	Status        uint8     `json:"status"`
+	ChapterNumber uint      `json:"chapter_number"`
+	WordCount     uint      `json:"word_count"`
+	View          uint      `json:"view"`
+	Like          uint      `json:"like"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type NovelChapter struct {
 	ID        uint64    `json:"id"`
-	NovelId   string    `json:"novel_id"`
+	NovelId   uint64    `json:"novel_id"`
 	Title     string    `json:"title"`
 	Number    int       `json:"num"`
 	Content   string    `json:"content"`

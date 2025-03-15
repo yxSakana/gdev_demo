@@ -29,6 +29,11 @@ func Register(c *gin.Context, u *do.User) error {
 	return user.Create(dao.Ctx(c), u)
 }
 
+func IsExist(c *gin.Context, uid uint64) (bool, error) {
+	_, err := user.GetUserByID(dao.Ctx(c), uid)
+	return err == nil, err
+}
+
 func GetUserID(c *gin.Context) (userId uint64, err error) {
 	authHeader := c.Request.Header.Get("Authorization")
 	claims, err := ParseToken(authHeader)
