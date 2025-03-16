@@ -1,6 +1,7 @@
 package novel
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	v1 "github.com/yxSakana/gdev_demo/api/novel/v1"
+	"github.com/yxSakana/gdev_demo/internal/consts"
 	"github.com/yxSakana/gdev_demo/internal/dao"
 	novelDao "github.com/yxSakana/gdev_demo/internal/dao/novel"
 	"github.com/yxSakana/gdev_demo/internal/logic/user"
@@ -17,6 +19,7 @@ import (
 	"github.com/yxSakana/gdev_demo/internal/model/conv"
 	"github.com/yxSakana/gdev_demo/internal/model/do"
 	"github.com/yxSakana/gdev_demo/internal/model/entity"
+	"github.com/yxSakana/gdev_demo/internal/rediscon"
 	novelService "github.com/yxSakana/gdev_demo/internal/service/novel"
 	"github.com/yxSakana/gdev_demo/utility"
 )
@@ -118,25 +121,35 @@ func QueryNovel(c *gin.Context, query model.NovelQueryInput) ([]do.Novel, error)
 	return outs, nil
 }
 
-func DetailNovelByID(c *gin.Context, nid uint64) (*do.Novel, error) {
+func DetailNovelByID(c *gin.Context, nid uint64) (nDo *do.Novel, err error) {
 	db := dao.Ctx(c)
-	nDo := new(do.Novel)
-
-	cacheRet, err := novelService.GetFromCache(nid)
+	uid, err := user.GetUserID(c)
 	if err != nil {
-		log.Printf("get from cache: %#v", cacheRet)
-		if cacheRet != nil {
-			if err := UpdateNovel(c, nid, model.UpdateNovelInput{View: &cacheRet.View}); err != nil {
-				log.Printf("from cache update novel: %#v", cacheRet)
+		return nil, err
+	}
+	nDo = new(do.Novel)
+	defer func() {
+		if err == nil && nDo != nil {
+			if err := rediscon.AddUvAndPv(context.Background(), uid, nid, nDo); err != nil {
+				log.Printf("add Uv&Pv err: %v", err)
+			}
+			if err := novelDao.UpdateNovel(db, nid, map[string]any{"view": nDo.View}); err != nil {
+				log.Printf("from cache update novel: %#v", nDo)
 			}
 		}
-		return cacheRet, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := rediscon.NilCache(context.Background(), nid, nDo); err != nil {
+				log.Printf("save to cache err: %v", err)
+			}
+		}
+	}()
+
+	if err := nDo.GetFromCache(context.Background(), nid); err == nil || errors.Is(err, consts.ErrCacheIsNil) {
+		log.Printf("Get from cache novel: %#v", nDo)
+		return nDo, err
 	}
 
 	nEntity, err := novelDao.GetNovelByID(db, nid)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		_ = novelService.SetCache(nid, nil)
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -147,10 +160,9 @@ func DetailNovelByID(c *gin.Context, nid uint64) (*do.Novel, error) {
 	}
 
 	*nDo = conv.NovelToDo(*nEntity, tags)
-	if err := novelService.SetCache(nid, nDo); err != nil {
-		log.Printf("set cache err: %v", err)
+	if err := nDo.SaveToCache(context.Background(), nid); err != nil {
+		log.Printf("save to cache err: %v", err)
 	}
-
 	return nDo, nil
 }
 
@@ -172,11 +184,11 @@ func GetNovelChapterIds(c *gin.Context, nid uint64) ([]uint64, error) {
 	return ids, err
 }
 
-func UpdateNovel(c *gin.Context, nid uint64, req model.UpdateNovelInput) error {
+func UpdateNovel(c *gin.Context, nid uint64, in model.UpdateNovelInput) error {
 	updateMap := make(map[string]interface{})
 
-	t := reflect.TypeOf(req)
-	v := reflect.ValueOf(req)
+	t := reflect.TypeOf(in)
+	v := reflect.ValueOf(in)
 	for i := 0; i < t.NumField(); i++ {
 		fieldVal := v.Field(i)
 		if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
@@ -191,7 +203,7 @@ func UpdateNovel(c *gin.Context, nid uint64, req model.UpdateNovelInput) error {
 		updateMap[tag] = v.Field(i).Interface()
 	}
 
-	filePath, err := utility.SaveFile(c, req.Cover, utility.CoverFt)
+	filePath, err := utility.SaveFile(c, in.Cover, utility.CoverFt)
 	if err != nil && !errors.Is(err, utility.ErrFileHeaderIsNil) {
 		log.Printf("save file err: %v", err)
 		return err
@@ -200,12 +212,12 @@ func UpdateNovel(c *gin.Context, nid uint64, req model.UpdateNovelInput) error {
 
 	db := dao.Ctx(c)
 	err = db.Transaction(func(tx *gorm.DB) error {
-		if req.Tags != nil {
+		if in.Tags != nil {
 			if err := novelDao.DelNrt(tx, nid); err != nil {
 				return err
 			}
 
-			if err := novelService.LinkNovelAndTags(tx, nid, *req.Tags); err != nil {
+			if err := novelService.LinkNovelAndTags(tx, nid, *in.Tags); err != nil {
 				return err
 			}
 		}
@@ -216,7 +228,8 @@ func UpdateNovel(c *gin.Context, nid uint64, req model.UpdateNovelInput) error {
 		return err
 	}
 
-	if err := novelService.DelCache(nid); err != nil {
+	nDo := new(do.Novel)
+	if err := nDo.DelCache(context.Background(), nid); err != nil {
 		log.Printf("del cache err: %v", err)
 	}
 	return nil

@@ -9,8 +9,10 @@ type ImageCollection struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	CoverUrl    string    `json:"cover_url"`
-	Number      int       `json:"number"`
 	Tags        []string  `json:"tags"`
+	Number      int       `json:"number"`
+	View        int       `json:"view" redis:"view"`
+	Like        int       `json:"like" redis:"like"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

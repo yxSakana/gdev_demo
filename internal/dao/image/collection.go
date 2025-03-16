@@ -22,7 +22,7 @@ func GetCollectionByID(db *gorm.DB, id uint64) (*entity.ImageCollection, error) 
 	return ret, err
 }
 
-func UpdateCollection(db gorm.DB, id uint64, fields map[string]any) error {
+func UpdateCollection(db *gorm.DB, id uint64, fields map[string]any) error {
 	return db.Model(&entity.ImageCollection{ID: id}).Updates(fields).Error
 }
 
@@ -31,4 +31,8 @@ func AutoUpdateCollectionImageCount(db *gorm.DB, id uint64) error {
 	UPDATE image_collections SET number = (
 		SELECT COUNT(*) FROM images WHERE collection_id = ?)
 	WHERE image_collections.id = ?`, id, id).Error
+}
+
+func DelCollection(db *gorm.DB, id uint64) error {
+	return db.Delete(&entity.ImageCollection{ID: id}).Error
 }

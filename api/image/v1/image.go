@@ -32,3 +32,17 @@ type DetailImgCollectionReq struct {
 type DetailImgCollectionRes struct {
 	ImageCollection
 }
+
+type UpdateImageCollectionReq struct {
+	Title       *string       `form:"title" binding:"required" json:"title"`
+	Description *string       `form:"description" binding:"required" json:"description"`
+	Cover       FileHeaderPtr `form:"cover" binding:"required" json:"cover"`
+	Tags        *[]string     `form:"tags" binding:"required" json:"tags"`
+}
+type UpdateImageCollectionRes struct {
+}
+
+type DelImageCollectionReq struct {
+	Id uint64 `json:"id" binding:"required"`
+}
+type DelImageCollectionRes struct{}

@@ -25,8 +25,9 @@ func DetailNovel(c *gin.Context) {
 	req.NovelID = uint64(nid)
 
 	novelOutput, err := novel.DetailNovelByID(c, req.NovelID)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, consts.ErrCacheIsNil) {
 		consts.ComError(c, "不存在")
+		return
 	}
 	if err != nil {
 		log.Printf("detail novel err: %v", err)

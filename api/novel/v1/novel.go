@@ -54,3 +54,8 @@ type UpdateNovelReq struct {
 	Tags        *[]string     `form:"tags" gorm:"-"`
 }
 type UpdateNovelRes struct{}
+
+type DelNovelReq struct {
+	Id uint64 `json:"id" binding:"required"`
+}
+type DelNovelRes struct{}

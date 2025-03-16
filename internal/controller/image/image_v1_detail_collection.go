@@ -24,7 +24,7 @@ func DetailImgCollection(c *gin.Context) {
 	req.CollectionID = uint64(nid)
 
 	imgCollection, err := logic.DetailImgCollectionByID(c, req.CollectionID)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, consts.ErrCacheIsNil) {
 		consts.ComError(c, "作品不存在")
 		return
 	}
@@ -43,6 +43,8 @@ func DetailImgCollection(c *gin.Context) {
 			CoverUrl:    imgCollection.CoverUrl,
 			Number:      imgCollection.Number,
 			Tags:        imgCollection.Tags,
+			View:        imgCollection.View,
+			Like:        imgCollection.Like,
 			CreatedAt:   imgCollection.CreatedAt,
 			UpdatedAt:   imgCollection.UpdatedAt,
 		},

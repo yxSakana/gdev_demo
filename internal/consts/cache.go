@@ -1,5 +1,7 @@
 package consts
 
+import "time"
+
 type ContentType int
 
 const (
@@ -8,8 +10,9 @@ const (
 )
 
 const (
-	CachePrefix = "gdd:c:"
-	CacheUser   = CachePrefix + "user"
-	CacheNovel  = CachePrefix + "novel"
-	CacheImage  = CachePrefix + "image"
+	CachePrefix    = "gdd:c:"
+	CacheUser      = CachePrefix + "user"
+	CacheNovel     = CachePrefix + "novel"
+	CacheImage     = CachePrefix + "image"
+	NilCacheExpire = 60 * time.Second
 )

@@ -31,6 +31,7 @@ func InitRouter() *gin.Engine {
 		novelG.GET("/:novel_id", novel.DetailNovel)
 		novelG.GET("/query", novel.Query)
 		novelG.POST("/update/:novel_id", novel.UpdateNovel)
+		novelG.POST("/delete/:novel_id", novel.DelNovel)
 	}
 	imageG := v1.Group("/image")
 	{
@@ -38,12 +39,9 @@ func InitRouter() *gin.Engine {
 		imageG.POST("/create", image.Create)
 		imageG.POST("/create_image", image.UploadImage)
 		imageG.POST("/create_images", image.UploadImages)
+		imageG.POST("/update/:collection_id", image.UpdateImageCollection)
+		imageG.POST("/delete/:collection_id", image.DelImageCollection)
 	}
 
 	return r
-}
-
-func userRouter(router *gin.RouterGroup) {
-	user := router.Group("/user")
-	user.GET("test/:name/:age")
 }

@@ -165,3 +165,9 @@ CREATE TABLE `image_tag_rel` (
 # LEFT JOIN image_tag_rel ON image_tags.id = image_tag_rel.image_tag_id
 # LEFT JOIN images ON image_tag_rel.collection_id = images.id
 # WHERE images.id = ?;
+
+SELECT `name`
+FROM `image_tags`
+    LEFT JOIN image_tag_rel  itr ON image_tags.id = itr.image_tag_id
+    LEFT JOIN image_collections ics ON itr.collection_id = ics.id
+WHERE ics.id = 1;

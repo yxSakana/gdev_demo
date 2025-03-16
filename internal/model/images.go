@@ -10,3 +10,10 @@ type CreateImageCollectionInput struct {
 	Cover       *multipart.FileHeader `form:"cover" json:"cover"`
 	Tags        []string              `form:"tags" json:"tags"`
 }
+
+type UpdateImageCollectionInput struct {
+	Title       *string       `gorm:"title"`
+	Description *string       `gorm:"description"`
+	Cover       FileHeaderPtr `gorm:"-"`
+	Tags        *[]string     `gorm:"-"`
+}

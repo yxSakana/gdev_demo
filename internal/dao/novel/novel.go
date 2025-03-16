@@ -71,3 +71,7 @@ func UpdateNovel(db *gorm.DB, nid uint64, updates map[string]any) error {
 func DelNrt(db *gorm.DB, nid uint64) error {
 	return db.Where("novel_id = ?", nid).Delete(&entity.NovelTagRel{}).Error
 }
+
+func DelNovel(db *gorm.DB, id uint64) error {
+	return db.Where("id = ?", id).Delete(&entity.Novel{}).Error
+}

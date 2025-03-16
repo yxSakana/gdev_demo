@@ -1,11 +1,14 @@
 package do
 
 import (
+	"context"
 	"fmt"
-	"github.com/yxSakana/gdev_demo/internal/consts"
-	"github.com/yxSakana/gdev_demo/utility"
 	"strings"
 	"time"
+
+	"github.com/yxSakana/gdev_demo/internal/consts"
+	"github.com/yxSakana/gdev_demo/internal/rediscon"
+	"github.com/yxSakana/gdev_demo/utility"
 )
 
 type ImageCollection struct {
@@ -34,6 +37,10 @@ func (ic *ImageCollection) GetCacheKey(id uint64) string {
 }
 
 func (ic *ImageCollection) ToCacheMap() map[string]interface{} {
+	empty := "0"
+	if ic == nil {
+		empty = "1"
+	}
 	return map[string]interface{}{
 		"id":         ic.ID,
 		"uid":        ic.UserID,
@@ -46,11 +53,11 @@ func (ic *ImageCollection) ToCacheMap() map[string]interface{} {
 		"like":       ic.Like,
 		"created_at": ic.CreatedAt,
 		"updated_at": ic.UpdatedAt,
-		"empty":      0,
+		"empty":      empty,
 	}
 }
 
-func (ic *ImageCollection) FromCacheMap(cacheRet map[string]string) {
+func (ic *ImageCollection) RefreshFromCacheMap(cacheRet map[string]string) {
 	if ic == nil {
 		return
 	}
@@ -67,4 +74,56 @@ func (ic *ImageCollection) FromCacheMap(cacheRet map[string]string) {
 	ic.Like = utility.MustInt(cacheRet["like"])
 	ic.CreatedAt = utility.MustTime(cacheRet["created_at"])
 	ic.UpdatedAt = utility.MustTime(cacheRet["updated_at"])
+}
+
+func (ic *ImageCollection) GetFromCache(ctx context.Context, id uint64) error {
+	key := ic.GetCacheKey(id)
+
+	ret, err := rediscon.Rdb.HGet(ctx, key, "empty").Result()
+	if err != nil {
+		return err
+	}
+	if ret == "1" {
+		return consts.ErrCacheIsNil
+	}
+
+	desc, err := rediscon.Rdb.Get(ctx, key+":desc").Result()
+	if err != nil {
+		return err
+	}
+	cacheRet, err := rediscon.Rdb.HGetAll(ctx, key).Result()
+	if err != nil {
+		return err
+	}
+	uv, _, err := rediscon.GetUvAndPv(ctx, id, ic)
+	if err != nil {
+		return err
+	}
+
+	cacheRet["desc"] = desc
+	cacheRet["view"] = fmt.Sprintf("%d", uv)
+
+	ic.RefreshFromCacheMap(cacheRet)
+	return nil
+}
+
+func (ic *ImageCollection) SaveToCache(ctx context.Context, id uint64) error {
+	key := ic.GetCacheKey(id)
+
+	if err := rediscon.Rdb.Set(ctx, key+":desc", ic.Description, 0).Err(); err != nil {
+		return err
+	}
+	return rediscon.Rdb.HSet(ctx, key, ic.ToCacheMap()).Err()
+}
+
+func (ic *ImageCollection) DelCache(ctx context.Context, id uint64) error {
+	key := ic.GetCacheKey(id)
+
+	if err := rediscon.Rdb.Del(ctx, key+":desc").Err(); err != nil {
+		return err
+	}
+	if err := rediscon.Rdb.Del(ctx, key).Err(); err != nil {
+		return err
+	}
+	return nil
 }
