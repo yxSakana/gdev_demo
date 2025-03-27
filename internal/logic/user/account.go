@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/yxSakana/gdev_demo/internal/dao"
 	"github.com/yxSakana/gdev_demo/internal/dao/user"

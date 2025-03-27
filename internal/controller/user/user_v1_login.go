@@ -16,7 +16,6 @@ func Login(c *gin.Context) {
 		consts.ParamError(c)
 		log.Printf("login参数错误: %v", err)
 		return
-
 	}
 
 	token, err := user.Login(c, req.Username, req.Password)

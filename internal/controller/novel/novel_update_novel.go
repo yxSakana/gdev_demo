@@ -12,6 +12,7 @@ import (
 	"github.com/yxSakana/gdev_demo/internal/logic/novel"
 )
 
+// UpdateNovel is a test doc
 func UpdateNovel(c *gin.Context) {
 	var req v1.UpdateNovelReq
 	var res v1.UpdateNovelRes

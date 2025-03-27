@@ -2,11 +2,13 @@ package dao
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yxSakana/gdev_demo/settings"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	"github.com/yxSakana/gdev_demo/settings"
 )
 
 var mysqlDB *gorm.DB
@@ -22,6 +24,7 @@ func init() {
 	var err error
 	mysqlDB, err = gorm.Open(mysql.Open(link), &gorm.Config{})
 	if err != nil {
+		log.Printf("mysql connect err: %v", err)
 		panic(err)
 	}
 }

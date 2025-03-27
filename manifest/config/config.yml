@@ -1,5 +1,5 @@
 server:
-  address: "127.0.0.1:8000"
+  address: ":8000"
   upload_dir: "uploads"
   cover_file_max_size: 10485760 # 10MB
   image_file_max_size: 52428800 # 50MB
@@ -9,6 +9,9 @@ database:
     link: ""  # 仅当不为空时使用
     user: "mysql"
     password: "aaa"
-    address: "127.0.0.1:3306"
+    address: "database:3306"
     dbname: "gdev_demo"
-#  redis:
+  redis:
+    addr: "redis:6379"
+    password: ""
+    DB: 0
