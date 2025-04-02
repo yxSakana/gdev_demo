@@ -5,12 +5,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/yxSakana/gdev_demo/settings"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/yxSakana/gdev_demo/settings"
 )
 
 type FileType int
